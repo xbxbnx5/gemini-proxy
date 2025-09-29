@@ -4,26 +4,31 @@ export default async function handler(request, response) {
   const targetApiHost = 'https://generativelanguage.googleapis.com';
   
   // 2. Получаем путь и параметры из входящего запроса
-  // request.url будет содержать что-то вроде /v1beta/models/...
   const targetUrl = targetApiHost + request.url;
 
+  // 3. Создаем новые заголовки и ЯВНО копируем ключ
+  const headers = new Headers();
+  headers.set('Content-Type', 'application/json');
+  // --- ВОТ ИСПРАВЛЕНИЕ ---
+  // Мы берем ключ из заголовка 'x-goog-api-key', который прислал Python
+  const apiKey = request.headers.get('x-goog-api-key');
+  if (apiKey) {
+    headers.set('x-goog-api-key', apiKey);
+  }
+
   try {
-    // 3. Отправляем запрос в Google, копируя все данные
+    // 4. Отправляем запрос в Google с новыми заголовками
     const apiResponse = await fetch(targetUrl, {
       method: request.method,
-      headers: {
-        'Content-Type': request.headers.get('Content-Type'),
-        'x-goog-api-key': request.headers.get('x-goog-api-key'),
-      },
+      headers: headers, // Используем наши новые, правильные заголовки
       body: request.body,
     });
 
-    // 4. Получаем ответ от Google и пересылаем его обратно вашему боту
+    // 5. Получаем ответ от Google и пересылаем его обратно
     const data = await apiResponse.json();
     response.status(apiResponse.status).json(data);
     
   } catch (error) {
-    // В случае ошибки, возвращаем ее
     response.status(500).json({ error: 'Proxy error', details: error.message });
   }
 }
