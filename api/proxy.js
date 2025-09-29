@@ -1,30 +1,23 @@
 // api/proxy.js
 export default async function handler(request, response) {
-  // 1. Адрес API Google
-  const targetApiHost = 'https://generativelanguage.googleapis.com';
+  // --- КЛЮЧ ВШИТ ПРЯМО СЮДА ---
+  const GEMINI_API_KEY = "AIzaSyDW62m3ZGDBTyLWISfLbWPIMiFVCLOJi44"; // <-- ВСТАВЬТЕ СЮДА ВАШ КЛЮЧ GEMINI
   
-  // 2. Получаем путь и параметры из входящего запроса
-  const targetUrl = targetApiHost + request.url;
-
-  // 3. Создаем новые заголовки и ЯВНО копируем ключ
-  const headers = new Headers();
-  headers.set('Content-Type', 'application/json');
-  // --- ВОТ ИСПРАВЛЕНИЕ ---
-  // Мы берем ключ из заголовка 'x-goog-api-key', который прислал Python
-  const apiKey = request.headers.get('x-goog-api-key');
-  if (apiKey) {
-    headers.set('x-goog-api-key', apiKey);
-  }
+  // 1. Адрес API Google. Теперь мы добавляем ключ прямо в URL, как в самом начале.
+  const targetApiHost = `https://generativelanguage.googleapis.com`;
+  const targetUrl = targetApiHost + request.url + `?key=${GEMINI_API_KEY}`;
 
   try {
-    // 4. Отправляем запрос в Google с новыми заголовками
+    // 2. Отправляем запрос в Google, копируя только метод и тело. Заголовки нам больше не нужны.
     const apiResponse = await fetch(targetUrl, {
       method: request.method,
-      headers: headers, // Используем наши новые, правильные заголовки
+      headers: {
+        'Content-Type': 'application/json',
+      },
       body: request.body,
     });
 
-    // 5. Получаем ответ от Google и пересылаем его обратно
+    // 3. Получаем ответ от Google и пересылаем его обратно
     const data = await apiResponse.json();
     response.status(apiResponse.status).json(data);
     
